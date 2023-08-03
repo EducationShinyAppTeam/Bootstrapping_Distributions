@@ -4,6 +4,12 @@ library(shinydashboard)
 library(shinyBS)
 library(shinyWidgets)
 library(boastUtils)
+library(ggplot2)
+library(gridExtra)
+library(grid)
+library(png)
+library(shinyanimate)
+library(magick)
 
 # Load additional dependencies and setup functions
 # source("global.R")
@@ -159,12 +165,36 @@ ui <- list(
           tabName = "explore",
           withMathJax(),
           h2("Explore the Concept"),
-          p("This page should include something for the user to do, the more
-            active and engaging, the better. The purpose of this page is to help
-            the user build a productive understanding of the concept your app
-            is dedicated to."),
-          p("Common elements include graphs, sliders, buttons, etc."),
-          p("The following comes from the NHST Caveats App:"),
+          fluidRow(
+            column(
+              width = 5,
+              wellPanel(
+                numericInput(
+                  inputId = "N",
+                  label = "Set:",
+                  min = 100,
+                  max = 500,
+                  value = 150,
+                  step = 1
+                ),
+                br(),
+                actionButton(
+                  inputId = "generate", 
+                  label = "Generate", 
+                  icon = icon("paper-plane"),
+                  class = "circle grow"
+                )
+              )
+            ),
+            column(
+              width = 3,
+              plotOutput("machine")
+            ),
+            column(
+              width = 4
+            )
+          )
+  
         ),
         #### Set up a Challenge Page ----
         tabItem(
@@ -237,7 +267,62 @@ server <- function(input, output, session) {
     }
   )
 
-
+  ## machine set up ----
+  img <- readPNG("C:/Users/Sean/Github_Files/Bootstrapping_Distributions/www/slot.png")
+  grob_img <- rasterGrob(img, interpolate = TRUE)
+  
+  output$machine <- renderPlot({
+    N <- 1000
+    
+    prop1 <- 0.55
+    lab1Pop <- data.frame(
+      color = rep(c("blue", "red"), times = c(round(prop1 * N), round((1 - prop1) * N))),
+      x = runif(N, min = -5, max = 5),
+      y = runif(N, min = 0, max = 5)
+    )
+    lab1Pop <- lab1Pop[sample.int(nrow(lab1Pop)),]
+    
+    ## candy grid
+    mainPlot1 <- ggplot(data = lab1Pop,
+                        mapping = aes(x = x, y = y, color = color, shape = color)) +
+      geom_point(size =  4) +  # Set the outline color to black and use fill for color
+      scale_color_manual(
+        values = c("blue" = boastUtils::psuPalette[1], "red" = boastUtils::psuPalette[2])
+      ) +
+      scale_shape_manual(
+        values = c("blue" = 16, "red" = 16) 
+      ) +
+      geom_hline(yintercept = -0.5, size = 2, color = "black") +
+      theme_bw() +
+      theme(
+        legend.position = "none",
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        plot.margin = unit(rep(0, 4), "cm") 
+      ) +
+      labs(title = NULL) +
+      xlab(NULL) +
+      ylab(NULL)
+    
+    ## red body
+    additionalLayer <- ggplot() +
+      geom_rect(aes(xmin = -6, xmax = 6, ymin = -8, ymax = 8), fill = boastUtils::psuPalette[2]) +
+      theme_void()
+    
+    ## candy exit
+    additionalLayer2 <- ggplot() +
+      geom_rect(aes(xmin = -6, xmax = 6, ymin = -8, ymax = 8), fill = boastUtils::boastPalette[5]) +
+      theme_void()
+    
+    ## Combine
+    combinedPlot <- additionalLayer +
+      annotation_custom(ggplotGrob(mainPlot1), xmin = -5, xmax = 5, ymin = 0, ymax = 7) +
+      annotation_custom(ggplotGrob(additionalLayer2), xmin = -3, xmax = 3, ymin = -8, ymax = -5 ) +
+      annotation_custom(grob_img, xmin = -4, xmax = 4, ymin = -6, ymax = 0.5) 
+    
+    combinedPlot
+  })
+  
 }
 
 # Boast App Call ----
