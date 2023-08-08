@@ -10,6 +10,8 @@ library(grid)
 library(png)
 library(shinyanimate)
 library(magick)
+library(gganimate)
+library(boot)
 
 # Load additional dependencies and setup functions
 # source("global.R")
@@ -42,11 +44,8 @@ ui <- list(
         id = "pages",
         menuItem("Overview", tabName = "overview", icon = icon("gauge-high")),
         menuItem("Prerequisites", tabName = "prerequisites", icon = icon("book")),
-        menuItem("Example", tabName = "example", icon = icon("book-open-reader")),
         menuItem("Explore", tabName = "explore", icon = icon("wpexplorer")),
-        menuItem("Challenge", tabName = "challenge", icon = icon("gears")),
         menuItem("Game", tabName = "game", icon = icon("gamepad")),
-        menuItem("Wizard", tabName = "wizard", icon = icon("hat-wizard")),
         menuItem("References", tabName = "references", icon = icon("leanpub"))
       ),
       tags$div(
@@ -169,18 +168,27 @@ ui <- list(
             column(
               width = 5,
               wellPanel(
-                numericInput(
-                  inputId = "N",
-                  label = "Set:",
-                  min = 100,
-                  max = 500,
-                  value = 150,
+                sliderInput(
+                  inputId = "prop",
+                  label = "Set Population Proportion",
+                  min = 0,
+                  max = 1,
+                  value = 0.55,
+                  step = 0.05
+                ),
+                br(),
+                sliderInput(
+                  inputId = "sam",
+                  label = "Set Sample Size",
+                  min = 10,
+                  max = 50,
+                  value = 30,
                   step = 1
                 ),
                 br(),
                 actionButton(
-                  inputId = "generate", 
-                  label = "Generate", 
+                  inputId = "drawSample", 
+                  label = "Draw Sample", 
                   icon = icon("paper-plane"),
                   class = "circle grow"
                 )
@@ -188,26 +196,16 @@ ui <- list(
             ),
             column(
               width = 3,
-              plotOutput("machine")
+              plotOutput("machine"),
+              uiOutput("sampleFreq1"),
+              uiOutput("sampleProp1"),
+              uiOutput("sampleSize1")
             ),
             column(
               width = 4
             )
           )
-  
-        ),
-        #### Set up a Challenge Page ----
-        tabItem(
-          tabName = "challenge",
-          withMathJax(),
-          h2("Challenge Yourself"),
-          p("The general intent of a Challenge page is to have the user take
-            what they learned in an Exploration and apply that knowledge in new
-            contexts/situations. In essence, to have them challenge their
-            understanding by testing themselves."),
-          p("What this page looks like will be up to you. Something you might
-            consider is to re-create the tools of the Exploration page and then
-            a list of questions for the user to then answer.")
+          
         ),
         #### Set up a Game Page ----
         tabItem(
@@ -217,16 +215,6 @@ ui <- list(
           p("On this type of page, you'll set up a game for the user to play.
             Game types include Tic-Tac-Toe, Matching, and a version Hangman to
             name a few. If you have ideas for new game type, please let us know.")
-        ),
-        #### Set up a Wizard Page ----
-        tabItem(
-          tabName = "wizard",
-          withMathJax(),
-          h2("Wizard"),
-          p("This page will have a series of inputs and questions for the user to
-            answer/work through in order to have the app create something. These
-            types of Activity pages are currently rare as we try to avoid
-            creating 'calculators' in the BOAST project.")
         ),
         #### Set up the References Page ----
         tabItem(
@@ -253,7 +241,7 @@ ui <- list(
 
 # Define server logic ----
 server <- function(input, output, session) {
-
+  
   ## Set up Info button ----
   observeEvent(
     eventExpr = input$info,
@@ -266,63 +254,160 @@ server <- function(input, output, session) {
       )
     }
   )
-
+  
   ## machine set up ----
   img <- readPNG("C:/Users/Sean/Github_Files/Bootstrapping_Distributions/www/slot.png")
   grob_img <- rasterGrob(img, interpolate = TRUE)
   
-  output$machine <- renderPlot({
-    N <- 1000
-    
-    prop1 <- 0.55
-    lab1Pop <- data.frame(
-      color = rep(c("blue", "red"), times = c(round(prop1 * N), round((1 - prop1) * N))),
-      x = runif(N, min = -5, max = 5),
-      y = runif(N, min = 0, max = 5)
-    )
-    lab1Pop <- lab1Pop[sample.int(nrow(lab1Pop)),]
-    
-    ## candy grid
-    mainPlot1 <- ggplot(data = lab1Pop,
-                        mapping = aes(x = x, y = y, color = color, shape = color)) +
-      geom_point(size =  4) +  # Set the outline color to black and use fill for color
-      scale_color_manual(
-        values = c("blue" = boastUtils::psuPalette[1], "red" = boastUtils::psuPalette[2])
-      ) +
-      scale_shape_manual(
-        values = c("blue" = 16, "red" = 16) 
-      ) +
-      geom_hline(yintercept = -0.5, size = 2, color = "black") +
-      theme_bw() +
-      theme(
-        legend.position = "none",
-        axis.ticks = element_blank(),
-        axis.text = element_blank(),
-        plot.margin = unit(rep(0, 4), "cm") 
-      ) +
-      labs(title = NULL) +
-      xlab(NULL) +
-      ylab(NULL)
-    
-    ## red body
-    additionalLayer <- ggplot() +
-      geom_rect(aes(xmin = -6, xmax = 6, ymin = -8, ymax = 8), fill = boastUtils::psuPalette[2]) +
-      theme_void()
-    
-    ## candy exit
-    additionalLayer2 <- ggplot() +
-      geom_rect(aes(xmin = -6, xmax = 6, ymin = -8, ymax = 8), fill = boastUtils::boastPalette[5]) +
-      theme_void()
-    
-    ## Combine
-    combinedPlot <- additionalLayer +
-      annotation_custom(ggplotGrob(mainPlot1), xmin = -5, xmax = 5, ymin = 0, ymax = 7) +
-      annotation_custom(ggplotGrob(additionalLayer2), xmin = -3, xmax = 3, ymin = -8, ymax = -5 ) +
-      annotation_custom(grob_img, xmin = -4, xmax = 4, ymin = -6, ymax = 0.5) 
-    
-    combinedPlot
-  })
+  lab1Pop <- reactive(
+    x = {
+      prop <- input$prop
+      N <- 1000
+      blueNum <- round(prop * N)
+      redNum <- N - blueNum
+      
+      data.frame(
+        color = rep(c("blue", "red"), times = c(blueNum, redNum)),
+        x = runif(N, min = -5, max = 5),
+        y = runif(N, min = 0, max = 5)
+      )
+    }
+  )
   
+  output$machine <- renderPlot(
+    expr = {
+      data <- lab1Pop()
+      
+      p <- ggplot(data = data,
+                  mapping = aes(x = x, y = y, color = color, shape = color)) +
+        geom_point(size =  4) +  
+        scale_color_manual(
+          values = c("blue" = boastUtils::psuPalette[1], "red" =  boastUtils::psuPalette[2])
+        ) +
+        scale_shape_manual(
+          values = c("blue" = 16, "red" = 16) 
+        ) +
+        geom_hline(yintercept = -0.5, size = 2, color = "black") +
+        theme_bw() +
+        theme(
+          legend.position = "none",
+          axis.ticks = element_blank(),
+          axis.text = element_blank(),
+          plot.margin = unit(rep(0, 4), "cm") 
+        ) +
+        labs(title = NULL) +
+        xlab(NULL) +
+        ylab(NULL)
+      
+      additionalLayer <- ggplot() +
+        geom_rect(aes(xmin = -6, xmax = 6, ymin = -8, ymax = 8), fill =  boastUtils::psuPalette[2]) +
+        theme_void()
+      
+      additionalLayer2 <- ggplot() +
+        geom_rect(aes(xmin = -6, xmax = 6, ymin = -8, ymax = 8), fill = "black") +
+        theme_void()
+      
+      combinedPlot <- additionalLayer +
+        annotation_custom(ggplotGrob(p), xmin = -5, xmax = 5, ymin = 0, ymax = 7) +
+        annotation_custom(ggplotGrob(additionalLayer2), xmin = -3, xmax = 3, ymin = -8, ymax = -5 ) +
+        annotation_custom(grob_img, xmin = -4, xmax = 4, ymin = -6, ymax = 0.5) 
+      
+      combinedPlot
+    }
+  )
+  
+  
+  ## Draw the sample for blue/red ----
+  observeEvent(
+    eventExpr = input$drawSample, 
+    handlerExpr = {
+      sampleSize <- input$sam
+      sampleData <- lab1Pop()
+      sample1 <- sampleData[sample.int(nrow(sampleData), size = sampleSize), ]
+      # sample1$x <- rep(c(-5, -3, -1, 1, 3, 5), 5)
+      # sample1$y <- rep(c(-10, -11, -12, -13, -14), 6)
+      numRow <- ceiling(sqrt(sampleSize))
+      numCol <- ceiling(sampleSize / numRow)
+      
+      xVal <- rep(seq(from = -5, to = 5, length.out = numCol), each = numRow)
+      yVal <- rep(seq(from = -10, to = -14, length.out = numRow), times = numCol)
+      
+      sample1$x <- xVal[1:sampleSize]
+      sample1$y <- yVal[1:sampleSize]
+      
+      nBlue <- length(which(sample1$color == "blue"))
+      
+      output$machine <- renderPlot(
+        expr = {
+          data <- lab1Pop()
+          
+          p <- ggplot(data = data,
+                      mapping = aes(x = x, y = y, color = color, shape = color)) +
+            geom_point(size =  4) +  
+            scale_color_manual(
+              values = c("blue" = boastUtils::psuPalette[1], "red" =  boastUtils::psuPalette[2])
+            ) +
+            scale_shape_manual(
+              values = c("blue" = 16, "red" = 16) 
+            ) +
+            geom_hline(yintercept = -0.5, size = 2, color = "black") +
+            theme_bw() +
+            theme(
+              legend.position = "none",
+              axis.ticks = element_blank(),
+              axis.text = element_blank(),
+              plot.margin = unit(rep(0, 4), "cm") 
+            ) +
+            labs(title = NULL) +
+            xlab(NULL) +
+            ylab(NULL)
+          
+          additionalLayer <- ggplot() +
+            geom_rect(aes(xmin = -6, xmax = 6, ymin = -8, ymax = 8), fill =  boastUtils::psuPalette[2]) +
+            theme_void()
+          
+          additionalLayer2 <- ggplot() +
+            geom_rect(aes(xmin = -6, xmax = 6, ymin = -8, ymax = 8), fill = "black") +
+            theme_void()
+          
+          combinedPlot <- additionalLayer +
+            annotation_custom(ggplotGrob(p), xmin = -5, xmax = 5, ymin = 0, ymax = 7) +
+            annotation_custom(ggplotGrob(additionalLayer2), xmin = -3, xmax = 3, ymin = -8, ymax = -5 ) +
+            annotation_custom(grob_img, xmin = -4, xmax = 4, ymin = -6, ymax = 0.5) 
+          
+          combinedPlot <- combinedPlot +
+            geom_point(data = sample1,
+                       mapping = aes(x = x, y = y, color = color),
+                       size = 4) +
+            scale_color_manual(values = c("blue" = boastUtils::psuPalette[1],
+                                          "red" = boastUtils::psuPalette[2])) +
+            geom_hline(yintercept = -15, size = 1, color = "black") +
+            theme(legend.position = "none")
+          
+          combinedPlot
+        }
+      )
+      
+      output$sampleFreq1 <- renderUI(
+        expr = {
+          paste("There are", nBlue, "blue-colored candies in your sample.")
+        }
+      )
+      
+      output$sampleProp1 <- renderUI(
+        expr = {
+          paste0("Your sample's proportion of blue-colored candies is ",
+                 round(nBlue / sampleSize, 2), ".")
+        }
+      )
+      
+      output$sampleSize1 <- renderUI(
+        expr = {
+          paste0("n = ", sampleSize)
+        }
+      )
+    }
+  )
 }
 
 # Boast App Call ----
