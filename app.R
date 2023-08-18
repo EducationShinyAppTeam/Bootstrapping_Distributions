@@ -186,11 +186,28 @@ ui <- list(
                   step = 1
                 ),
                 br(),
-                actionButton(
+                bsButton(
                   inputId = "drawSample", 
                   label = "Draw Sample", 
                   icon = icon("paper-plane"),
                   class = "circle grow"
+                ),
+                br(),
+                br(),
+                numericInput(
+                  inputId = "bootSamp",
+                  label = "Boot Samples",
+                  min = 1,
+                  max = 10000,
+                  value = 1
+                ),
+                br(),
+                bsButton(
+                  inputId = "drawBoot", 
+                  label = "Draw BootStrap Sample", 
+                  icon = icon("paper-plane"),
+                  class = "circle grow",
+                  disabled = TRUE
                 )
               )
             ),
@@ -202,42 +219,45 @@ ui <- list(
               uiOutput("sampleSize1")
             ),
             column(
-              width = 4
+              width = 4,
+              plotOutput("latestBootGridPlot"),
+              plotOutput("bootProportionsPlot")
             )
           )
-          
         ),
-        #### Set up a Game Page ----
-        tabItem(
-          tabName = "game",
-          withMathJax(),
-          h2("Practice/Test Yourself with [Type of Game]"),
-          p("On this type of page, you'll set up a game for the user to play.
+          #### Set up a Game Page ----
+          tabItem(
+            tabName = "game",
+            withMathJax(),
+            h2("Practice/Test Yourself with [Type of Game]"),
+            p("On this type of page, you'll set up a game for the user to play.
             Game types include Tic-Tac-Toe, Matching, and a version Hangman to
             name a few. If you have ideas for new game type, please let us know.")
-        ),
-        #### Set up the References Page ----
-        tabItem(
-          tabName = "references",
-          withMathJax(),
-          h2("References"),
-          p("You'll need to fill in this page with all of the appropriate
+          ),
+          #### Set up the References Page ----
+          tabItem(
+            tabName = "references",
+            withMathJax(),
+            h2("References"),
+            p("You'll need to fill in this page with all of the appropriate
             references for your app."),
-          p(
-            class = "hangingindent",
-            "Bailey, E. (2015). shinyBS: Twitter bootstrap components for shiny.
+            p(
+              class = "hangingindent",
+              "Bailey, E. (2015). shinyBS: Twitter bootstrap components for shiny.
             (v0.61). [R package]. Available from
             https://CRAN.R-project.org/package=shinyBS"
-          ),
-          br(),
-          br(),
-          br(),
-          boastUtils::copyrightInfo()
+            ),
+            br(),
+            br(),
+            br(),
+            boastUtils::copyrightInfo()
+          )
         )
       )
     )
   )
-)
+
+
 
 # Define server logic ----
 server <- function(input, output, session) {
@@ -280,12 +300,9 @@ server <- function(input, output, session) {
       
       p <- ggplot(data = data,
                   mapping = aes(x = x, y = y, color = color, shape = color)) +
-        geom_point(size =  4) +  
-        scale_color_manual(
+        geom_point(size = 4, aes(fill = color), shape = 21, color = "black") +  
+        scale_fill_manual(
           values = c("blue" = boastUtils::psuPalette[1], "red" =  boastUtils::psuPalette[2])
-        ) +
-        scale_shape_manual(
-          values = c("blue" = 16, "red" = 16) 
         ) +
         geom_hline(yintercept = -0.5, size = 2, color = "black") +
         theme_bw() +
@@ -300,7 +317,7 @@ server <- function(input, output, session) {
         ylab(NULL)
       
       additionalLayer <- ggplot() +
-        geom_rect(aes(xmin = -6, xmax = 6, ymin = -8, ymax = 8), fill =  boastUtils::psuPalette[2]) +
+        geom_rect(aes(xmin = -6, xmax = 6, ymin = -8, ymax = 8), fill =  boastUtils::psuPalette[2], color = "black") +
         theme_void()
       
       additionalLayer2 <- ggplot() +
@@ -316,16 +333,23 @@ server <- function(input, output, session) {
     }
   )
   
+  sampleReact <- reactiveVal()
+  sizeReact <- reactiveVal()
   
   ## Draw the sample for blue/red ----
   observeEvent(
     eventExpr = input$drawSample, 
     handlerExpr = {
+      
+      updateButton(
+        session = session,
+        inputId = "drawBoot",
+        disabled = FALSE
+      )
+      
       sampleSize <- input$sam
       sampleData <- lab1Pop()
       sample1 <- sampleData[sample.int(nrow(sampleData), size = sampleSize), ]
-      # sample1$x <- rep(c(-5, -3, -1, 1, 3, 5), 5)
-      # sample1$y <- rep(c(-10, -11, -12, -13, -14), 6)
       numRow <- ceiling(sqrt(sampleSize))
       numCol <- ceiling(sampleSize / numRow)
       
@@ -337,20 +361,20 @@ server <- function(input, output, session) {
       
       nBlue <- length(which(sample1$color == "blue"))
       
+      sampleReact(sample1)
+      sizeReact(sampleSize)
+      
       output$machine <- renderPlot(
         expr = {
           data <- lab1Pop()
           
           p <- ggplot(data = data,
                       mapping = aes(x = x, y = y, color = color, shape = color)) +
-            geom_point(size =  4) +  
-            scale_color_manual(
+            geom_point(size = 4, aes(fill = color), shape = 21, color = "black") +  
+            scale_fill_manual(
               values = c("blue" = boastUtils::psuPalette[1], "red" =  boastUtils::psuPalette[2])
             ) +
-            scale_shape_manual(
-              values = c("blue" = 16, "red" = 16) 
-            ) +
-            geom_hline(yintercept = -0.5, size = 2, color = "black") +
+            geom_hline(yintercept = -0.5, linewidth = 2, color = "black") +
             theme_bw() +
             theme(
               legend.position = "none",
@@ -363,7 +387,7 @@ server <- function(input, output, session) {
             ylab(NULL)
           
           additionalLayer <- ggplot() +
-            geom_rect(aes(xmin = -6, xmax = 6, ymin = -8, ymax = 8), fill =  boastUtils::psuPalette[2]) +
+            geom_rect(aes(xmin = -6, xmax = 6, ymin = -8, ymax = 8), fill =  boastUtils::psuPalette[2], color = "black") +
             theme_void()
           
           additionalLayer2 <- ggplot() +
@@ -377,14 +401,17 @@ server <- function(input, output, session) {
           
           combinedPlot <- combinedPlot +
             geom_point(data = sample1,
-                       mapping = aes(x = x, y = y, color = color),
-                       size = 4) +
-            scale_color_manual(values = c("blue" = boastUtils::psuPalette[1],
+                       mapping = aes(x = x, y = y, fill = color),
+                       shape = 21,
+                       size = 4,
+                       color = "black") +
+            scale_fill_manual(values = c("blue" = boastUtils::psuPalette[1],
                                           "red" = boastUtils::psuPalette[2])) +
-            geom_hline(yintercept = -15, size = 1, color = "black") +
+            geom_hline(yintercept = -15, linewidth = 1, color = "black") +
             theme(legend.position = "none")
           
           combinedPlot
+          
         }
       )
       
@@ -404,6 +431,65 @@ server <- function(input, output, session) {
       output$sampleSize1 <- renderUI(
         expr = {
           paste0("n = ", sampleSize)
+        }
+      )
+    }
+  )
+  
+  resampleFunction <- function(data, indices) {
+    resampleData <- data[indices, ]
+    return(resampleData)
+  }
+  
+  latestBootSampleData <- reactiveVal(NULL)  # To store the latest resampled data
+  
+  ## Draw the Boot sample  ----
+  observeEvent(
+    eventExpr = input$drawBoot, 
+    handlerExpr = {
+      sample1 <- sampleReact()
+      sampleSize <- sizeReact()
+      
+      # Perform bootstrapping
+      numBootSamp <- input$bootSamp
+      sampleBoot <- boot(data = sample1, statistic = resampleFunction, R = numBootSamp)
+      
+      # Get the bootstrapped samples
+      resampleDataBoot <- sampleBoot$t
+      
+      latestBootSampleData(resampleDataBoot)  # Store the latest resampled data
+      
+      # observe({
+      #   print(latestBootSampleData())
+      # })
+      
+      output$latestBootGridPlot <- renderPlot(
+        expr = {
+          sampleData <- latestBootSampleData()
+          
+          if (!is.null(sampleData)) {
+            colors <- sampleData[[1]]
+            
+            numRow <- ceiling(sqrt(length(colors)))
+            numCol <- ceiling(length(colors) / numRow)
+            
+            xVal <- rep(seq(from = -5, to = 5, length.out = numCol), each = numRow)
+            yVal <- rep(seq(from = -10, to = -14, length.out = numRow), times = numCol)
+            
+            # Create a data frame for plotting
+            latestBootSamplePlot <- data.frame(
+              color = colors,
+              x = xVal,
+              y = yVal
+            )
+            
+            ggplot(latestBootSamplePlot, aes(x = x, y = y, fill = color)) +
+              geom_point(shape = 21, size = 4, color = "black") +
+              scale_fill_manual(values = c("blue" = boastUtils::psuPalette[1], "red" = boastUtils::psuPalette[2])) +
+              geom_hline(yintercept = -15, linewidth = 1, color = "black") +
+              theme_void() +
+              theme(legend.position = "none")
+          }
         }
       )
     }
