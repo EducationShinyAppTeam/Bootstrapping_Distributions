@@ -220,7 +220,11 @@ ui <- list(
             ),
             column(
               width = 4,
+              h3("Latest Bootstrap Sample"),
+              br(),
               plotOutput("latestBootGridPlot"),
+              br(),
+              h3("Distribution of Proportions"),
               plotOutput("bootProportionsPlot")
             )
           )
@@ -304,7 +308,7 @@ server <- function(input, output, session) {
         scale_fill_manual(
           values = c("blue" = boastUtils::psuPalette[1], "red" =  boastUtils::psuPalette[2])
         ) +
-        geom_hline(yintercept = -0.5, size = 2, color = "black") +
+        geom_hline(yintercept = -0.5, linewidth = 2, color = "black") +
         theme_bw() +
         theme(
           legend.position = "none",
@@ -442,6 +446,7 @@ server <- function(input, output, session) {
   }
   
   latestBootSampleData <- reactiveVal(NULL)  # To store the latest resampled data
+  proportionsAccumulated <- reactiveVal(NULL)
   
   ## Draw the Boot sample  ----
   observeEvent(
@@ -449,26 +454,37 @@ server <- function(input, output, session) {
     handlerExpr = {
       sample1 <- sampleReact()
       sampleSize <- sizeReact()
-      
-      # Perform bootstrapping
       numBootSamp <- input$bootSamp
-      sampleBoot <- boot(data = sample1, statistic = resampleFunction, R = numBootSamp)
       
-      # Get the bootstrapped samples
-      resampleDataBoot <- sampleBoot$t
+      # lists for samples and proportions
+      bootSampleList <- list()
+      proportionList <- list()
       
-      latestBootSampleData(resampleDataBoot)  # Store the latest resampled data
+      for (i in 1:numBootSamp) {
+        sampleBoot <- boot(data = sample1, statistic = resampleFunction, R = 1)  # Perform one bootstrap
+        resampleDataBoot <- sampleBoot$t
+        
+        # Calculate the proportion of blue points
+        proportionBlue <- sum(resampleDataBoot[[1]] == "blue") / sampleSize
+        proportionList[[i]] <- proportionBlue
+        
+        # Store the resampled data in the list
+        bootSampleList[[i]] <- resampleDataBoot
+        # print(proportionBlue)
+        
+      }
       
-      # observe({
-      #   print(latestBootSampleData())
-      # })
+      # Store bootstrapped samples
+      latestBootSampleData(bootSampleList)
       
       output$latestBootGridPlot <- renderPlot(
         expr = {
-          sampleData <- latestBootSampleData()
+          sampleDataList <- latestBootSampleData()
           
-          if (!is.null(sampleData)) {
-            colors <- sampleData[[1]]
+          if (!is.null(sampleDataList)) {
+            lastSampleData <- sampleDataList[[length(sampleDataList)]]
+            
+            colors <- lastSampleData[[1]]
             
             numRow <- ceiling(sqrt(length(colors)))
             numCol <- ceiling(length(colors) / numRow)
@@ -489,6 +505,47 @@ server <- function(input, output, session) {
               geom_hline(yintercept = -15, linewidth = 1, color = "black") +
               theme_void() +
               theme(legend.position = "none")
+          }
+        }
+      )
+      
+      # Update the accumulated proportions
+      if (!is.null(proportionsAccumulated())) {
+        accumulatedProportions <- c(proportionsAccumulated(), sapply(proportionList, identity))
+        proportionsAccumulated(accumulatedProportions)
+      } else {
+        proportionsAccumulated(sapply(proportionList, identity))
+      }
+      
+      output$bootProportionsPlot <- renderPlot(
+        expr = {
+          proportions <- proportionsAccumulated()
+          # print(proportions)
+          if (!is.null(proportions)) {
+            proportion_df <- data.frame(Proportion = proportions)
+            
+            if (length(proportions) <= 200) {
+              # Create a dot plot for fewer points
+              ggplot(proportion_df, aes(x = Proportion)) +
+                geom_dotplot(binwidth = 0.03, dotsize = 1) +
+                labs(title = "Distribution of Proportions of Blue in Bootstrapped Samples",
+                     x = "Proportion of Blue",
+                     y = "") +
+                theme_minimal() +
+                theme(
+                  axis.title.y = element_blank(),
+                  axis.text.y = element_blank(),
+                  axis.ticks.y = element_blank()
+                ) 
+            } else {
+              # Create a histogram for higher number of points
+              ggplot(proportion_df, aes(x = Proportion)) +
+                geom_histogram(binwidth = 0.05, color = "black", alpha = 0.7) +
+                labs(title = "Distribution of Proportions of Blue in Bootstrapped Samples",
+                     x = "Proportion of Blue",
+                     y = "Frequency") +
+                theme_minimal()
+            }
           }
         }
       )
