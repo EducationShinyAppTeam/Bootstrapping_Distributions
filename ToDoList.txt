@@ -1,5 +1,11 @@
 # Things Needed for This Version
 1.
-2.
+
 
 # Ideas for Future Development
+1. Maybe add Clicker function to plot the sample that generated the selected dot on the dotplot(similar to latest bootsrap plot).
+  *Concerns: - geom_dotplot changing dot size depending on number and distribution.
+             - Tried making dotplot with geom_point (FAILED).
+             - Finding data of each bootstrapped sample stored.
+             
+2. Maybe try to find a way to animate the process.
