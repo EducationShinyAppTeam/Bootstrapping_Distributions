@@ -166,7 +166,7 @@ ui <- list(
           h2("Explore the Concept"),
           fluidRow(
             column(
-              width = 5,
+              width = 3,
               wellPanel(
                 sliderInput(
                   inputId = "prop",
@@ -201,7 +201,8 @@ ui <- list(
                   inputId = "drawSample", 
                   label = "Draw Sample", 
                   icon = icon("paper-plane"),
-                  class = "circle grow"
+                  class = "circle grow",
+                  disabled = FALSE
                 ),
                 br(),
                 br(),
@@ -228,20 +229,20 @@ ui <- list(
               )
             ),
             column(
-              width = 3,
+              width = 9,
               plotOutput("machine"),
               uiOutput("sampleFreq1"),
               uiOutput("sampleProp1"),
               uiOutput("sampleSize1")
             ),
-            column(
-              width = 4,
-              #h3("Latest Bootstrap Sample"),
-              br(),
-              plotOutput("latestBootGridPlot"),
-              br(),
-              plotOutput("bootProportionsPlot"),
-            )
+            # column(
+            #   width = ,
+            #   #h3("Latest Bootstrap Sample"),
+            #   br(),
+            #   plotOutput("latestBootGridPlot"),
+            #   br(),
+            #   plotOutput("bootProportionsPlot"),
+            # )
           )
         ),
           #### Set up a Game Page ----
@@ -313,6 +314,9 @@ server <- function(input, output, session) {
     }
   )
   
+  # outPlot <- ggplot()
+  storePlot <- reactiveVal(NULL)
+  
   output$machine <- renderPlot(
     expr = {
       data <- lab1Pop()
@@ -346,6 +350,8 @@ server <- function(input, output, session) {
         annotation_custom(ggplotGrob(candyBox), xmin = -5, xmax = 5, ymin = 0, ymax = 7) +
         annotation_custom(CoinSlot, xmin = -4, xmax = 4, ymin = -6, ymax = 0.5) 
       
+      storePlot(FullCandyMachine)
+      
       FullCandyMachine
     }
   )
@@ -362,6 +368,8 @@ server <- function(input, output, session) {
      sample(800:1000,1)
     }
   }
+  
+  storePlot1 <- reactiveVal(NULL)
   
   ## Draw the sample for blue/red ----
   observeEvent(
@@ -394,37 +402,7 @@ server <- function(input, output, session) {
         expr = {
           data <- lab1Pop()
           
-          candyBox <- ggplot(data = data,
-                      mapping = aes(x = x, y = y, color = color, shape = color)) +
-            geom_point(size = 4, aes(fill = color), shape = 21, color = "black") +  
-            scale_fill_manual(
-              values = c("blue" = boastUtils::psuPalette[1], "red" =  boastUtils::psuPalette[2])
-            ) +
-            geom_hline(yintercept = -0.5, linewidth = 2, color = "black") +
-            theme_bw() +
-            theme(
-              legend.position = "none",
-              axis.ticks = element_blank(),
-              axis.text = element_blank(),
-              plot.margin = unit(rep(0, 4), "cm") 
-            ) +
-            labs(title = NULL) +
-            xlab(NULL) +
-            ylab(NULL)
-          
-          candyMachineBody <- ggplot() +
-            geom_rect(aes(xmin = -6, xmax = 6, ymin = -8, ymax = 8), fill =  boastUtils::psuPalette[2], color = "black") +
-            theme_void() +
-            geom_rect(aes(xmin = -3, xmax = 3, ymin = -8, ymax = -5), fill = "black") +
-            theme_void()
-          
-          
-          
-          FullCandyMachine <- candyMachineBody +
-            annotation_custom(ggplotGrob(candyBox), xmin = -5, xmax = 5, ymin = 0, ymax = 7) +
-            annotation_custom(CoinSlot, xmin = -4, xmax = 4, ymin = -6, ymax = 0.5) 
-          
-          FullCandyMachine <- FullCandyMachine +
+          FullCandyMachine <- storePlot() +
             geom_point(data = sample1,
                        mapping = aes(x = x, y = y, fill = color),
                        shape = 21,
@@ -435,6 +413,7 @@ server <- function(input, output, session) {
             geom_hline(yintercept = -15, linewidth = 1, color = "black") +
             theme(legend.position = "none")
           
+          storePlot1(FullCandyMachine)
           FullCandyMachine
           
         }
@@ -520,8 +499,8 @@ server <- function(input, output, session) {
 
       # Store bootstrapped samples
       latestBootSampleData(bootSampleList)
-
-      output$latestBootGridPlot <- renderPlot(
+      
+      output$machine <- renderPlot(
         expr = {
           sampleDataList <- latestBootSampleData()
 
@@ -534,7 +513,7 @@ server <- function(input, output, session) {
             numCol <- ceiling(length(colors) / numRow)
 
             xVal <- rep(seq(from = -5, to = 5, length.out = numCol), each = numRow)
-            yVal <- rep(seq(from = -10, to = -14, length.out = numRow), times = numCol)
+            yVal <- rep(seq(from = -20, to = -16, length.out = numRow), times = numCol)
 
 
             # Create a data frame for plotting
@@ -543,124 +522,119 @@ server <- function(input, output, session) {
               x = xVal[1:sampleSize],
               y = yVal[1:sampleSize]
             )
-
-            ggplot(latestBootSamplePlot, aes(x = x, y = y, fill = color)) +
-              geom_point(shape = 21, size = 4, color = "black") +
-              scale_fill_manual(values = c("blue" = boastUtils::psuPalette[1], "red" = boastUtils::psuPalette[2])) +
-              geom_hline(yintercept = -15, linewidth = 1, color = "black") +
+            
+            # print(latestBootSamplePlot)
+            
+            # ggplot(latestBootSamplePlot, aes(x = x, y = y, fill = color)) +
+            FullCandyMachine <- storePlot1() + 
+              geom_point(
+                data = latestBootSamplePlot,
+                mapping = aes(x = x, y = y, fill = color),
+                shape = 21,
+                size = 4,
+                color = "black"
+                ) +
+              # scale_fill_manual(values = c("blue" = boastUtils::psuPalette[1], "red" = boastUtils::psuPalette[2])) +
+              geom_hline(yintercept = -21, linewidth = 1, color = "black") +
               theme_void() +
               theme(legend.position = "none")
+            FullCandyMachine
           }
         }
       )
 
-      # Update the accumulated proportions
-      if (!is.null(proportionsAccumulated())) {
-        accumulatedProportions <- c(proportionsAccumulated(), sapply(proportionList, identity))
-        proportionsAccumulated(accumulatedProportions)
-      } else {
-        proportionsAccumulated(sapply(proportionList, identity))
-      }
-
-      output$bootProportionsPlot <- renderPlot(
+      # # Update the accumulated proportions
+      # if (!is.null(proportionsAccumulated())) {
+      #   accumulatedProportions <- c(proportionsAccumulated(), sapply(proportionList, identity))
+      #   proportionsAccumulated(accumulatedProportions)
+      # } else {
+      #   proportionsAccumulated(sapply(proportionList, identity))
+      # }
+      # 
+      # output$bootProportionsPlot <- renderPlot(
+      #   expr = {
+      #     proportions <- proportionsAccumulated()
+      #     # print(proportions)
+      #     if (!is.null(proportions)) {
+      #       proportion_df <- data.frame(Proportion = proportions)
+      # 
+      #       if (length(proportions) <= 200) {
+      #         # Create a dot plot for fewer points
+      #         ggplot(proportion_df, aes(x = Proportion)) +
+      #           geom_dotplot(binwidth = 0.03, dotsize = 1) +
+      #           labs(title = "Distribution of Proportions of Blue in Bootstrapped Samples",
+      #                x = "Proportion of Blue",
+      #                y = "") +
+      #           theme_minimal() +
+      #           theme(
+      #             axis.title.y = element_blank(),
+      #             axis.text.y = element_blank(),
+      #             axis.ticks.y = element_blank()
+      #           ) +
+      #           coord_fixed(ratio = 0.2)
+      #       } else {
+      #         # Create a histogram for higher number of points
+      #         p <- ggplot(proportion_df, aes(x = Proportion)) +
+      #           geom_histogram(binwidth = 0.05, color = "black", alpha = 0.7) +
+      #           labs(title = "Distribution of Proportions of Blue in Bootstrapped Samples",
+      #                x = "Proportion of Blue",
+      #                y = "Frequency") +
+      #           theme_minimal()
+      #         p
+      #       }
+      #     }
+      #   }
+      # )
+    }
+  )
+  
+  observeEvent(
+    eventExpr = input$reset,
+    handlerExpr = {
+      
+      updateRadioGroupButtons(
+        session = session,
+        inputId = "sam",
+        disabled = FALSE
+      )
+      
+      updateButton(
+        session = session,
+        inputId = "drawSample",
+        disabled = FALSE
+      )
+      
+      updateButton(
+        session = session,
+        inputId = "drawBoot",
+        disabled = TRUE
+      )
+      
+      proportionsAccumulated(NULL)
+      latestBootSampleData(NULL)
+      storePlot1(NULL)
+      
+      output$machine <- renderPlot(
         expr = {
-          proportions <- proportionsAccumulated()
-          # print(proportions)
-          if (!is.null(proportions)) {
-            proportion_df <- data.frame(Proportion = proportions)
-
-            if (length(proportions) <= 200) {
-              # Create a dot plot for fewer points
-              ggplot(proportion_df, aes(x = Proportion)) +
-                geom_dotplot(binwidth = 0.03, dotsize = 1) +
-                labs(title = "Distribution of Proportions of Blue in Bootstrapped Samples",
-                     x = "Proportion of Blue",
-                     y = "") +
-                theme_minimal() +
-                theme(
-                  axis.title.y = element_blank(),
-                  axis.text.y = element_blank(),
-                  axis.ticks.y = element_blank()
-                ) +
-                coord_fixed(ratio = 0.2)
-            } else {
-              # Create a histogram for higher number of points
-              p <- ggplot(proportion_df, aes(x = Proportion)) +
-                geom_histogram(binwidth = 0.05, color = "black", alpha = 0.7) +
-                labs(title = "Distribution of Proportions of Blue in Bootstrapped Samples",
-                     x = "Proportion of Blue",
-                     y = "Frequency") +
-                theme_minimal()
-              p
-            }
-          }
+          storePlot()
         }
       )
       
-      observeEvent(
-        eventExpr = input$reset,
-        handlerExpr = {
-          
-          updateRadioGroupButtons(
-            session = session,
-            inputId = "sam",
-            disabled = FALSE
-          )
-          
-          updateButton(
-            session = session,
-            inputId = "drawSample",
-            disabled = FALSE
-          )
-          
-          updateButton(
-            session = session,
-            inputId = "drawBoot",
-            disabled = TRUE
-          )
-          
-          proportionsAccumulated(NULL)
-          latestBootSampleData(NULL)
-          bootSampleList <- list()
-          proportionList <- list()
-          
-          output$machine <- renderPlot(
-            expr = {
-              data <- lab1Pop()
-              
-              candyBox <- ggplot(data = data,
-                                 mapping = aes(x = x, y = y, color = color, shape = color)) +
-                geom_point(size = 4, aes(fill = color), shape = 21, color = "black") +  
-                scale_fill_manual(
-                  values = c("blue" = boastUtils::psuPalette[1], "red" =  boastUtils::psuPalette[2])
-                ) +
-                geom_hline(yintercept = -0.5, linewidth = 2, color = "black") +
-                theme_bw() +
-                theme(
-                  legend.position = "none",
-                  axis.ticks = element_blank(),
-                  axis.text = element_blank(),
-                  plot.margin = unit(rep(0, 4), "cm") 
-                ) +
-                labs(title = NULL) +
-                xlab(NULL) +
-                ylab(NULL)
-              
-              candyMachineBody <- ggplot() +
-                geom_rect(aes(xmin = -6, xmax = 6, ymin = -8, ymax = 8), fill =  boastUtils::psuPalette[2], color = "black") +
-                theme_void() +
-                geom_rect(aes(xmin = -3, xmax = 3, ymin = -8, ymax = -5), fill = "black") +
-                theme_void()
-              
-              
-              FullCandyMachine <- candyMachineBody +
-                annotation_custom(ggplotGrob(candyBox), xmin = -5, xmax = 5, ymin = 0, ymax = 7) +
-                annotation_custom(CoinSlot, xmin = -4, xmax = 4, ymin = -6, ymax = 0.5) 
-              
-              FullCandyMachine
-            }
-          )
-          
+      output$sampleFreq1 <- renderUI(
+        expr = {
+          paste0(NULL)
+        }
+      )
+      
+      output$sampleProp1 <- renderUI(
+        expr = {
+          paste0(NULL)
+        }
+      )
+      
+      output$sampleSize1 <- renderUI(
+        expr = {
+          paste0(NULL)
         }
       )
     }
