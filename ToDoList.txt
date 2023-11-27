@@ -1,11 +1,33 @@
 # Things Needed for This Version
-1.
+
+1. have an adaptable binwidth to samplesize for histogram and find a way to select the whole bar.
+
+2 switch to buttons instead of click functionality
+
+3. fix the select plot functionality when drawBoot is triggered more than once.
+
+4. remove accumulative functionality ✓
+  ##Hopefully will fix the selecting plot issue in #3. **It didnt
+  
+5. Have rstudio select a random plot for "..." instead of just having a "..." 
+
+6. add text/ titles to the example page.
+
+7. add confidence interval/standard error.
 
 
 # Ideas for Future Development
+
+##Not happening ##
 1. Maybe add Clicker function to plot the sample that generated the selected dot on the dotplot(similar to latest bootsrap plot).
-  *Concerns: - geom_dotplot changing dot size depending on number and distribution.
-             - Tried making dotplot with geom_point (FAILED).
-             - Finding data of each bootstrapped sample stored.
-             
+  *Concerns: 
+  - geom_dotplot changing dot size depending on number and     distribution.
+  - Tried making dotplot with geom_point (FAILED).
+  - Finding data of each bootstrapped sample stored.
+##############
+
+
 2. Maybe try to find a way to animate the process.
+
+
+### Can I change to bootstrapping simulations

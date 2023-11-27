@@ -1,5 +1,6 @@
 # Load Packages ----
 library(shiny)
+library(dplyr)
 library(shinydashboard)
 library(shinyBS)
 library(shinyWidgets)
@@ -12,6 +13,7 @@ library(shinyanimate)
 library(magick)
 library(gganimate)
 library(boot)
+library(shinycssloaders)
 
 # Load additional dependencies and setup functions
 # source("global.R")
@@ -23,12 +25,12 @@ ui <- list(
     skin = "blue",
     ### Create the app header ----
     dashboardHeader(
-      title = "App Template", # You may use a shortened form of the title here
+      title = "Bootstrapping Distributions", # You may use a shortened form of the title here
       titleWidth = 250,
       tags$li(class = "dropdown", actionLink("info", icon("info"))),
       tags$li(
         class = "dropdown",
-        boastUtils::surveyLink(name = "App_Template")
+        boastUtils::surveyLink(name = "Bootstrapping_Distributions")
       ),
       tags$li(
         class = "dropdown",
@@ -45,7 +47,7 @@ ui <- list(
         menuItem("Overview", tabName = "overview", icon = icon("gauge-high")),
         menuItem("Prerequisites", tabName = "prerequisites", icon = icon("book")),
         menuItem("Explore", tabName = "explore", icon = icon("wpexplorer")),
-        menuItem("Game", tabName = "game", icon = icon("gamepad")),
+        # menuItem("Game", tabName = "game", icon = icon("gamepad")),
         menuItem("References", tabName = "references", icon = icon("leanpub"))
       ),
       tags$div(
@@ -60,18 +62,12 @@ ui <- list(
         tabItem(
           tabName = "overview",
           withMathJax(),
-          h1("Sample Application for BOAST Apps"), # This should be the full name.
-          p("This is a sample Shiny application for BOAST. Remember, this page
-            will act like the front page (home page) of your app. Thus you will
-            want to have this page catch attention and describe (in general terms)
-            what the user can do in the rest of the app."),
+          h1("Bootstrapping Distributions"), # This should be the full name.
+          p("In this app, you will observe the bootstrapping process through simulations."),
           h2("Instructions"),
-          p("This information will change depending on what you want to do."),
           tags$ol(
             tags$li("Review any prerequiste ideas using the Prerequistes tab."),
-            tags$li("Explore the Exploration Tab."),
-            tags$li("Challenge yourself."),
-            tags$li("Play the game to test how far you've come.")
+            tags$li("Explore the Exploration Tab.")
           ),
           ##### Go Button--location will depend on your goals
           div(
@@ -89,8 +85,7 @@ ui <- list(
           br(),
           h2("Acknowledgements"),
           p(
-            "This version of the app was developed and coded by Neil J.
-            Hatfield  and Robert P. Carey, III.",
+            "This version of the app was developed and coded by Sean Burke",
             br(),
             "We would like to extend a special thanks to the Shiny Program
             Students.",
@@ -101,7 +96,7 @@ ui <- list(
             citeApp(),
             br(),
             br(),
-            div(class = "updated", "Last Update: 11/8/2022 by NJH.")
+            div(class = "updated", "Last Update: 11/8/2023 by SB.")
           )
         ),
         #### Set up the Prerequisites Page ----
@@ -163,10 +158,14 @@ ui <- list(
         tabItem(
           tabName = "explore",
           withMathJax(),
-          h2("Explore the Concept"),
+          h2("Boot strapping Simulations"),
+          p("Draw a sample of candy from the Candy machine. 
+            Draw bootstrap samples from the original sample and watch how the 
+            proportion of blue candies in each bootstrapped sample lies on the histogram.
+            Click on the individual plots of a single bootstrap sample and see where it falls in the histogram."),
           fluidRow(
             column(
-              width = 3,
+              width = 5,
               wellPanel(
                 sliderInput(
                   inputId = "prop",
@@ -209,14 +208,14 @@ ui <- list(
                 numericInput(
                   inputId = "bootSamp",
                   label = "Boot Samples",
-                  min = 1,
+                  min = 4,
                   max = 10000,
-                  value = 1
+                  value = 4
                 ),
                 br(),
                 bsButton(
                   inputId = "drawBoot", 
-                  label = "Draw BootStrap Sample", 
+                  label = "Draw BootStrap Samples", 
                   icon = icon("paper-plane"),
                   class = "circle grow",
                   disabled = TRUE
@@ -229,11 +228,14 @@ ui <- list(
               )
             ),
             column(
-              width = 9,
-              plotOutput("machine"),
+              width = 7,
+              h3("Candy Machine", align = "center"),
+              br(),
+              plotOutput("machine") %>% 
+                withSpinner(color = boastUtils::psuPalette[1]),
               uiOutput("sampleFreq1"),
               uiOutput("sampleProp1"),
-              uiOutput("sampleSize1")
+              uiOutput("sampleSize1"),
             ),
             # column(
             #   width = ,
@@ -243,7 +245,41 @@ ui <- list(
             #   br(),
             #   plotOutput("bootProportionsPlot"),
             # )
-          )
+          ),
+          fluidRow(
+            h3("Bootstrap Samples"),
+            br(),
+            plotOutput(
+              "bootPlots",
+              click = clickOpts(id = "clicker")
+            ) %>%
+              withSpinner(color = boastUtils::psuPalette[1])
+          ),
+          fluidRow(
+            bsButton(
+              inputId = "firstBoot", 
+              label = "First Bootstrap",
+              class = "circle grow"
+            ),
+            bsButton(
+              inputId = "secondBoot", 
+              label = "Second Bootstrap",
+              class = "circle grow"
+            ),
+            bsButton(
+              inputId = "dotBoot", 
+              label = "Random Bootstrap",
+              class = "circle grow"
+            ),
+            bsButton(
+              inputId = "lastBoot", 
+              label = "Last Bootstrap",
+              class = "circle grow"
+            )
+
+          ),
+          plotOutput("bootProportionsPlot") %>%
+            withSpinner(color = boastUtils::psuPalette[1])
         ),
           #### Set up a Game Page ----
           tabItem(
@@ -348,7 +384,11 @@ server <- function(input, output, session) {
       
       FullCandyMachine <- candyMachineBody +
         annotation_custom(ggplotGrob(candyBox), xmin = -5, xmax = 5, ymin = 0, ymax = 7) +
-        annotation_custom(CoinSlot, xmin = -4, xmax = 4, ymin = -6, ymax = 0.5) 
+        annotation_custom(CoinSlot, xmin = -4, xmax = 4, ymin = -6, ymax = 0.5) +
+        coord_cartesian(
+          xlim = c(-12, 12),
+          expand = FALSE
+        )
       
       storePlot(FullCandyMachine)
       
@@ -361,16 +401,16 @@ server <- function(input, output, session) {
   
   sampleSizeFunc <- function() {
     if (input$sam == "small") {
-      sample(20:40, 1)
+      36
     } else if (input$sam == "medium") {
-      sample(80:110, 1)
+      100
     } else if (input$sam == "large") {
-     sample(800:1000,1)
+     400
     }
   }
   
   storePlot1 <- reactiveVal(NULL)
-  
+  storeSampleBlue <- reactiveVal(NULL)
   ## Draw the sample for blue/red ----
   observeEvent(
     eventExpr = input$drawSample, 
@@ -381,6 +421,7 @@ server <- function(input, output, session) {
         inputId = "drawBoot",
         disabled = FALSE
       )
+      
       sampleSize <- sampleSizeFunc()
       sampleData <- lab1Pop()
       sample1 <- sampleData[sample.int(nrow(sampleData), size = sampleSize), ]
@@ -395,13 +436,15 @@ server <- function(input, output, session) {
       
       nBlue <- length(which(sample1$color == "blue"))
       
+      storeSampleBlue(round(nBlue / sampleSize, 2))
       sampleReact(sample1)
       sizeReact(sampleSize)
+      
+      # print(sample1)
       
       output$machine <- renderPlot(
         expr = {
           data <- lab1Pop()
-          
           FullCandyMachine <- storePlot() +
             geom_point(data = sample1,
                        mapping = aes(x = x, y = y, fill = color),
@@ -428,7 +471,7 @@ server <- function(input, output, session) {
       output$sampleProp1 <- renderUI(
         expr = {
           paste0("Your sample's proportion of blue-colored candies is ",
-                 round(nBlue / sampleSize, 2), ".")
+                storeSampleBlue(), ".")
         }
       )
       
@@ -444,25 +487,95 @@ server <- function(input, output, session) {
     resampleData <- data[indices, ]
     return(resampleData)
   }
-
+  
+  firstBootSampleData <- reactiveVal(NULL) 
+  secondBootSampleData <- reactiveVal(NULL) 
   latestBootSampleData <- reactiveVal(NULL)  # To store the latest resampled data
   proportionsAccumulated <- reactiveVal(NULL)
-  # selectedBootSampleData <- reactiveVal(NULL) #store selected data
+  
+  firstInitialized <- reactiveVal(FALSE)
+  secondInitialized <- reactiveVal(FALSE)
 
-  # v <- reactiveValues(click1 = NULL)
-  #
-  # observeEvent(
-  #   eventExpr = input$clicker,
-  #   handlerExpr = {
-  #     v$click1 <- input$clicker
+  # lists for samples and proportions
+  firstBootSampleList <- list()
+  secondBootSampleList <- list()
+  latestBootSampleList <- list()
+  
+  clickVal <- reactiveValues(panelvar1 = NULL)
+  
+  # observe(
+  #   x = {
+  #     # Initially will be empty
+  #     if (is.null(input$clicker)) {
+  #       return()
+  #     } 
+  #     isolate(
+  #       expr = {
+  #         clickVal$panelvar1 <- input$clicker$panelvar1
+  #       }
+  #     )
   #   }
   # )
+  
+  
+  #flag for highlighted plot in facet
+  highlighted <- reactiveVal(NULL)
+  
 
+  bootPlots1 <- reactiveVal(NULL)
+  bootPlotsOg <- reactiveVal(NULL)
+  
+  output$bootPlots <- renderPlot(
+    expr = {
+      NULL
+    }
+  )
+  
+  output$bootProportionsPlot <- renderPlot(
+    expr = {
+      NULL
+    }
+  )
+  
+  observeEvent(input$clicker, {
+    # Check if the clicker input is not NULL
+    if (!is.null(input$clicker)) {
+      # Extract the panelvar1 value
+      clickVal$panelvar1 <- input$clicker$panelvar1
+      
+      # Check if the highlighted value is NULL or different from the clicked value
+      if (is.null(highlighted()) || highlighted() != clickVal$panelvar1) {
+        # Highlight the specified region in the plot
+        shadedRegion <- data.frame(
+          type = clickVal$panelvar1,
+          xmin = -8,
+          xmax = 8,
+          ymin = -22,
+          ymax = 0
+        )
+        
+        # Update the plot with the highlighted region
+        bootPlots1(bootPlotsOg() +
+                     geom_rect(data = shadedRegion, 
+                               aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+                               fill = boastUtils::boastPalette[2], alpha = 0.3, inherit.aes = FALSE)
+        )
+        
+        # Update the highlighted value
+        highlighted(clickVal$panelvar1)
+      } else {
+        # If the highlighted value is the same or NULL, remove the highlighting
+        bootPlots1(bootPlotsOg())
+        highlighted(NULL)
+      }
+    }
+  })
+  
   ## Draw the Boot sample  ----
   observeEvent(
     eventExpr = input$drawBoot,
     handlerExpr = {
-      
+    
       updateRadioGroupButtons(
         session = session,
         inputId = "sam",
@@ -478,113 +591,335 @@ server <- function(input, output, session) {
       sample1 <- sampleReact()
       sampleSize <- sizeReact()
       numBootSamp <- input$bootSamp
-
-      # lists for samples and proportions
-      bootSampleList <- list()
+      
       proportionList <- list()
 
+      # print(firstInitialized) 
+      
       for (i in 1:numBootSamp) {
         sampleBoot <- boot(data = sample1, statistic = resampleFunction, R = 1)  # Perform one bootstrap
         resampleDataBoot <- sampleBoot$t
-
+        
         # Calculate the proportion of blue points
         proportionBlue <- sum(resampleDataBoot[[1]] == "blue") / sampleSize
         proportionList[[i]] <- proportionBlue
 
         # Store the resampled data in the list
-        bootSampleList[[i]] <- resampleDataBoot
+        # bootSampleList[[i]] <- resampleDataBoot
         # print(proportionBlue)
-
-      }
-
-      # Store bootstrapped samples
-      latestBootSampleData(bootSampleList)
+        
+        if (i == 1) {
+          firstBootSampleList[[i]] <- resampleDataBoot
+          # firstInitialized(TRUE)
+        } else if (i == 2) {
+          secondBootSampleList[[i]] <- resampleDataBoot
+          # secondInitialized(TRUE)
+        } else {
+          latestBootSampleList[[i]] <- resampleDataBoot
+        }
       
-      output$machine <- renderPlot(
-        expr = {
-          sampleDataList <- latestBootSampleData()
-
-          if (!is.null(sampleDataList)) {
-            lastSampleData <- sampleDataList[[length(sampleDataList)]]
-
-            colors <- lastSampleData[[1]]
-
-            numRow <- ceiling(sqrt(length(colors)))
-            numCol <- ceiling(length(colors) / numRow)
-
-            xVal <- rep(seq(from = -5, to = 5, length.out = numCol), each = numRow)
-            yVal <- rep(seq(from = -20, to = -16, length.out = numRow), times = numCol)
-
-
-            # Create a data frame for plotting
-            latestBootSamplePlot <- data.frame(
-              color = colors,
-              x = xVal[1:sampleSize],
-              y = yVal[1:sampleSize]
+        # print(latestBootSampleList)
+      }
+      
+      # print(firstInitialized)
+      # Store bootstrapped samples
+      if (is.null(firstBootSampleData())) {
+      firstBootSampleData(firstBootSampleList)
+      secondBootSampleData(secondBootSampleList)
+      }
+      
+      latestBootSampleData(latestBootSampleList)
+      
+      firstSampleDataList <- firstBootSampleData()
+      secondSampleDataList <- secondBootSampleData()
+      latestSampleDataList <- latestBootSampleData()
+      
+      
+      if (!is.null(firstSampleDataList) & !is.null(secondSampleDataList) & !is.null(latestSampleDataList)) {
+        
+        firstSampleData <- firstSampleDataList[[length(firstSampleDataList)]]
+        secondSampleData <- secondSampleDataList[[length(secondSampleDataList)]]
+        lastSampleData <- latestSampleDataList[[length(latestSampleDataList)]]
+        
+        colorsFirst <- firstSampleData[[1]]
+        colorsSecond <- secondSampleData[[1]]
+        colorsLast <- lastSampleData[[1]]
+        
+         # print(colorsFirst)
+        # print(colorsLast)
+        
+        numRow <- ceiling(sqrt(length(colorsLast)))
+        numCol <- ceiling(length(colorsLast) / numRow)
+        
+        xVal <- rep(seq(from = -5, to = 5, length.out = numCol), each = numRow)
+        yVal <- rep(seq(from = -20, to = -16, length.out = numRow), times = numCol)
+        
+        # Create a data frame for plotting
+        firstBootSamplePlot <- data.frame(
+          color = colorsFirst,
+          x = xVal[1:sampleSize],
+          y = yVal[1:sampleSize]
+        ) 
+        
+        
+        secondBootSamplePlot <- data.frame(
+          color = colorsSecond,
+          x = xVal[1:sampleSize],
+          y = yVal[1:sampleSize]
+        )
+        
+        latestBootSamplePlot <- data.frame(
+          color = colorsLast,
+          x = xVal[1:sampleSize],
+          y = yVal[1:sampleSize]
+        )
+        
+        nPlot <- data.frame(
+          color = c(""),
+          x = c(0),
+          y = c(0)
+        )
+      }
+      
+      # print(latestBootSamplePlot)
+      allData <- rbind(
+        transform(firstBootSamplePlot, type = "First Bootstrap"),
+        transform(secondBootSamplePlot, type = "Second Bootstrap"),
+        transform(latestBootSamplePlot, type = "Last Bootstrap"),
+        transform(nPlot, type = "..., num, ...")
+      )
+      
+      # glimpse(allData)
+      
+      textLabels <- data.frame(
+        type = c(
+          "First Bootstrap",
+          "Second Bootstrap",
+          "Last Bootstrap",
+          "..., num, ..."
+        ),
+        label = c(
+          paste("Proportion of Blue: \n ", round(sum(colorsFirst == "blue") / sampleSize, 2), "\n\n Sample Size: \n", sampleSize),
+          paste("Proportion of Blue: \n", round(sum(colorsSecond == "blue") / sampleSize, 2), "\n\n Sample Size: \n", sampleSize),
+          paste("Proportion of Blue: \n", round(sum(colorsLast == "blue") / sampleSize, 2), "\n\n Sample Size: \n", sampleSize),
+          ""
+        )
+      )
+      
+      # nTextLabel <- data.frame(
+      #   type = c(
+      #     "First Bootstrap",
+      #     "Second Bootstrap",
+      #     "Last Bootstrap",
+      #     "..., num, ..."
+      #   ),
+      #   label = c(
+      #     "",
+      #     "",
+      #     "",
+      #     "..."
+      #   )
+      # )
+      
+      # ggplot(latestBootSamplePlot, aes(x = x, y = y, fill = color)) +
+      # FullCandyMachine <- storePlot1() + 
+      
+      bootPlots <- ggplot(data = allData, mapping = aes(x = x, y = y, fill = color)) +
+        geom_point(shape = 21, size = 4, color = "black") +
+        scale_fill_manual(
+          values = c(
+            "blue" = boastUtils::psuPalette[1],
+            "red" =  boastUtils::psuPalette[2],
+            "black" = boastUtils::boastPalette[5]
+          )
+        ) +
+        geom_hline(yintercept = -21, linewidth = 1, color = "black") +
+        facet_grid(
+          ~factor(
+            type,
+            levels = c(
+              "First Bootstrap",
+              "Second Bootstrap",
+              "..., num, ...",
+              "Last Bootstrap"
             )
-            
-            # print(latestBootSamplePlot)
-            
-            # ggplot(latestBootSamplePlot, aes(x = x, y = y, fill = color)) +
-            FullCandyMachine <- storePlot1() + 
-              geom_point(
-                data = latestBootSamplePlot,
-                mapping = aes(x = x, y = y, fill = color),
-                shape = 21,
-                size = 4,
-                color = "black"
-                ) +
-              # scale_fill_manual(values = c("blue" = boastUtils::psuPalette[1], "red" = boastUtils::psuPalette[2])) +
-              geom_hline(yintercept = -21, linewidth = 1, color = "black") +
-              theme_void() +
-              theme(legend.position = "none")
-            FullCandyMachine
-          }
+          )
+        ) +
+        coord_cartesian(
+          xlim = c(-8, 8),
+          ylim = c(-25, -6),  
+          expand = FALSE
+        ) +
+        theme_void() +
+        theme(legend.position = "none") +
+        theme(strip.text.x = element_text(size = 18)) +
+        geom_text(data = textLabels, x = 0, y = -10, aes(label = label), size = 5, inherit.aes = FALSE) 
+        # geom_text(data = nTextLabel, x = 0, y = -17, aes(label = label), size = 28, inherit.aes = FALSE) 
+        
+      bootPlots1(bootPlots)
+      bootPlotsOg(bootPlots)
+      
+      # observeEvent(
+      #   eventExpr = input$clicker, 
+      #   handlerExpr = {
+      #     # print(highlighted())
+      #     
+      #     shadedRegion <- data.frame(
+      #       type = clickVal$panelvar1,
+      #       xmin = -8,
+      #       xmax = 8,
+      #       ymin = -22,
+      #       ymax = 0
+      #     )
+      #     
+      #     
+      #     print(highlighted())
+      #     print(clickVal$panelvar1)
+      #     
+      #     if (is.null(highlighted()) || highlighted() != clickVal$panelvar1) {
+      #       
+      #       bootPlots <- bootPlots +
+      #         geom_rect(data = shadedRegion, 
+      #                   aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax,),
+      #                   fill = boastUtils::boastPalette[2], alpha = 0.3, inherit.aes = FALSE)
+      #       
+      #       bootPlots1(bootPlots)
+      #       highlighted(clickVal$panelvar1)
+      #       
+      #     } else {
+      #       
+      #       bootPlots1(bootPlots)
+      #       highlighted(NULL)
+      #     }
+      #     
+      #   }
+      # )
+     
+      output$bootPlots <- renderPlot(
+        expr = {
+          bootPlots1()
         }
       )
 
-      # # Update the accumulated proportions
+      # Update the accumulated proportions ###REMOVE Accumulation property###
       # if (!is.null(proportionsAccumulated())) {
       #   accumulatedProportions <- c(proportionsAccumulated(), sapply(proportionList, identity))
       #   proportionsAccumulated(accumulatedProportions)
       # } else {
       #   proportionsAccumulated(sapply(proportionList, identity))
       # }
-      # 
-      # output$bootProportionsPlot <- renderPlot(
-      #   expr = {
-      #     proportions <- proportionsAccumulated()
-      #     # print(proportions)
-      #     if (!is.null(proportions)) {
-      #       proportion_df <- data.frame(Proportion = proportions)
-      # 
-      #       if (length(proportions) <= 200) {
-      #         # Create a dot plot for fewer points
-      #         ggplot(proportion_df, aes(x = Proportion)) +
-      #           geom_dotplot(binwidth = 0.03, dotsize = 1) +
-      #           labs(title = "Distribution of Proportions of Blue in Bootstrapped Samples",
-      #                x = "Proportion of Blue",
-      #                y = "") +
-      #           theme_minimal() +
-      #           theme(
-      #             axis.title.y = element_blank(),
-      #             axis.text.y = element_blank(),
-      #             axis.ticks.y = element_blank()
-      #           ) +
-      #           coord_fixed(ratio = 0.2)
-      #       } else {
-      #         # Create a histogram for higher number of points
-      #         p <- ggplot(proportion_df, aes(x = Proportion)) +
-      #           geom_histogram(binwidth = 0.05, color = "black", alpha = 0.7) +
-      #           labs(title = "Distribution of Proportions of Blue in Bootstrapped Samples",
-      #                x = "Proportion of Blue",
-      #                y = "Frequency") +
-      #           theme_minimal()
-      #         p
-      #       }
-      #     }
-      #   }
-      # )
+      proportionsAccumulated(sapply(proportionList, identity))
+      ####
+      
+      output$bootProportionsPlot <- renderPlot(
+        expr = {
+          proportions <- proportionsAccumulated()
+          # print(proportions)
+          if (!is.null(proportions)) {
+            proportionDf <- data.frame(Proportion = proportions, numberBoot = 1:(length(proportions)))
+            
+            
+            proportionDf$numberBoot <- ifelse(proportionDf$numberBoot == 1, "First Bootstrap",
+                                              ifelse(proportionDf$numberBoot == 2, "Second Bootstrap",
+                                                     ifelse(proportionDf$numberBoot == length(proportions), "Last Bootstrap", proportionDf$numberBoot)))
+            
+            # print(proportionDf)
+            # print(length(proportionDf$numberBoot))
+            
+            if (is.null(clickVal$panelvar1)) {
+              # Default 'selected' to "No" for all rows if clickVal$panelvar1 is NULL
+              proportionDf$selected <- "No"
+            } else {
+              if (!is.null(highlighted()) && highlighted() == clickVal$panelvar1) {
+              proportionDf <- proportionDf %>%
+                mutate(selected = ifelse(abs(Proportion - Proportion[which(numberBoot == clickVal$panelvar1)]) <= 0.05, "Yes", "No"))
+              
+              
+              } else if (clickVal$panelvar1 == "..." ) {
+                proportionDf$selected <- "No"
+                proportionDf$selected[sample(3:(length(proportionDf) - 1), 1)] <- "Yes"
+                
+                
+              } else {
+                proportionDf$selected <- "No"
+              }
+            }
+            
+            # print(proportionDf)
+            
+            alpha <- 0.05
+            z <- qnorm(1 - alpha/2)
+            propMean <- mean(proportionDf$Proportion)
+            sdData <- sd(proportionDf$Proportion)
+            n <- length(proportionDf$Proportion)
+            
+            confInt <- propMean + c(-z, z) * sdData / sqrt(n)
+            
+            popDat <- input$prop
+            sampDat <-  storeSampleBlue()
+            
+            breaks <- seq(0,1, by = 0.05)
+            
+              p <- ggplot(proportionDf, aes(x = Proportion, fill = selected)) +
+                # Note for Binwidth: *can set center and boundaries closed left/right
+                
+                geom_histogram(
+                  breaks = breaks,
+                  # binwidth = 0.05,
+                  color = "black",
+                  alpha = 0.7
+                ) +
+                labs(title = "Distribution of Proportions of Blue in Bootstrapped Samples",
+                     x = "Proportion of Blue",
+                     y = "Frequency") +
+                # geom_segment(
+                #   x = confInt[1],
+                #   xend = confInt[1],
+                #   y = 0,
+                #   yend = Inf,
+                #   color = "red",
+                #   linetype = "dotted"
+                # ) +
+                # geom_segment(
+                #   x = confInt[2],
+                #   xend = confInt[2],
+                #   y = 0,
+                #   yend = Inf,
+                #   color = "red",
+                #   linetype = "dotted"
+                # ) +
+                scale_fill_manual(values = c("No" = boastUtils::boastPalette[8], "Yes" = boastUtils::boastPalette[2]), guide = "none") +
+                theme_minimal() +
+                theme(
+                  plot.title = element_text(size = 18),
+                  axis.title = element_text(size = 14)
+                ) +
+                theme(legend.position = "None")
+                
+              p + 
+                geom_vline(
+                  mapping = aes(xintercept = popDat, color = "Population"), 
+                  linewidth = 1
+                ) +
+                geom_vline(
+                  mapping = aes(xintercept = sampDat, color = "Original Sample"), 
+                  linewidth = 1
+                ) +
+                scale_color_manual(
+                  name = "",
+                  values = c(
+                    "Population" = boastUtils::boastPalette[5], 
+                    "Original Sample" = boastUtils::psuPalette[2]
+                  )
+                ) +
+                theme(
+                  legend.position = "bottom",
+                  legend.text = element_text(size = 18)
+                )
+              # }
+          }
+        }
+      )
     }
   )
   
@@ -611,14 +946,57 @@ server <- function(input, output, session) {
       )
       
       proportionsAccumulated(NULL)
+      firstBootSampleData(NULL)
+      secondBootSampleData(NULL)
       latestBootSampleData(NULL)
       storePlot1(NULL)
+      storeSampleBlue(NULL)
+      highlighted(NULL)
       
       output$machine <- renderPlot(
         expr = {
-          storePlot()
+          
+              data <- lab1Pop()
+              
+              candyBox <- ggplot(data = data,
+                                 mapping = aes(x = x, y = y, color = color, shape = color)) +
+                geom_point(size = 4, aes(fill = color), shape = 21, color = "black") +  
+                scale_fill_manual(
+                  values = c("blue" = boastUtils::psuPalette[1], "red" =  boastUtils::psuPalette[2])
+                ) +
+                geom_hline(yintercept = -0.5, linewidth = 2, color = "black") +
+                theme_bw() +
+                theme(
+                  legend.position = "none",
+                  axis.ticks = element_blank(),
+                  axis.text = element_blank(),
+                  plot.margin = unit(rep(0, 4), "cm") 
+                ) +
+                labs(title = NULL) +
+                xlab(NULL) +
+                ylab(NULL)
+              
+              candyMachineBody <- ggplot() +
+                geom_rect(aes(xmin = -6, xmax = 6, ymin = -8, ymax = 8), fill =  boastUtils::psuPalette[2], color = "black") +
+                theme_void() +
+                geom_rect(aes(xmin = -3, xmax = 3, ymin = -8, ymax = -5), fill = "black") +
+                theme_void()
+              
+              
+              FullCandyMachine <- candyMachineBody +
+                annotation_custom(ggplotGrob(candyBox), xmin = -5, xmax = 5, ymin = 0, ymax = 7) +
+                annotation_custom(CoinSlot, xmin = -4, xmax = 4, ymin = -6, ymax = 0.5) +
+                coord_cartesian(
+                  xlim = c(-12, 12),
+                  expand = FALSE
+                )
+              
+              storePlot(FullCandyMachine)
+              
+              FullCandyMachine
         }
       )
+      output$bootPlots <- renderPlot(NULL)
       
       output$sampleFreq1 <- renderUI(
         expr = {
