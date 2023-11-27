@@ -1,17 +1,16 @@
 # Things Needed for This Version
 
-1. have an adaptable binwidth to samplesize for histogram and find a way to select the whole bar.
+1. have an adaptable binwidth to samplesize for histogram and find a way to select the whole bar. #IN PROGRESS
 
-2 switch to buttons instead of click functionality
+2 switch to buttons instead of click functionality #IN PROGRESS
 
-3. fix the select plot functionality when drawBoot is triggered more than once.
+3. fix the select plot functionality when drawBoot is triggered more than once. ✓
 
 4. remove accumulative functionality ✓
-  ##Hopefully will fix the selecting plot issue in #3. **It didnt
-  
-5. Have rstudio select a random plot for "..." instead of just having a "..." 
 
-6. add text/ titles to the example page.
+5. Have rstudio select a random plot for "..." instead of just having a "..."  #IN PROGRESS
+
+6. add text/ titles to the example page. ✓
 
 7. add confidence interval/standard error.
 
