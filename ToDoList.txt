@@ -1,14 +1,15 @@
 # Things Needed for This Version
 
-1. have an adaptable binwidth to samplesize for histogram and find a way to select the whole bar. #IN PROGRESS
+1. have an adaptable binwidth to samplesize for histogram and find a way to select the whole bar. ✓
 
-2 switch to buttons instead of click functionality #IN PROGRESS
+2 switch to buttons instead of click functionality? #Maybe
 
 3. fix the select plot functionality when drawBoot is triggered more than once. ✓
 
-4. remove accumulative functionality ✓
+4. remove accumulation of proportion functionality ✓
 
-5. Have rstudio select a random plot for "..." instead of just having a "..."  #IN PROGRESS
+5. Have rstudio select a random plot for "..." instead of just having a "..." ✓
+
 
 6. add text/ titles to the example page. ✓
 
@@ -29,4 +30,4 @@
 2. Maybe try to find a way to animate the process.
 
 
-### Can I change to bootstrapping simulations
+### Can I change to name to bootstrapping simulations

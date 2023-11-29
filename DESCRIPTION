@@ -1,4 +1,4 @@
-Title: Bootstrapping Distributions
+Title: Bootstrapping Simulations
 ShortName: Bootstrapping
 Date: 2023-07-27
 Lifecycle: experimental
@@ -14,8 +14,8 @@ LearningObjectives: c(
     "The student will learn to understand Concept B as description y."
   )
 DisplayMode: Normal
-URL: https://psu-eberly.shinyapps.io/Bootstrapping_Distributions
-BugReports: https://github.com/EducationShinyAppTeam/Bootstrapping_Distributions/issues
+URL: https://psu-eberly.shinyapps.io/Bootstrapping_Simulations
+BugReports: https://github.com/EducationShinyAppTeam/Bootstrapping_Simulations/issues
 License: CC-BY-NC-SA-4.0
 Tags: simulation
 Type: Shiny
