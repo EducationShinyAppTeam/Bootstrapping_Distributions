@@ -6,12 +6,7 @@ library(shinyBS)
 library(shinyWidgets)
 library(boastUtils)
 library(ggplot2)
-library(gridExtra)
-library(grid)
-library(png)
-library(shinyanimate)
-library(magick)
-library(gganimate)
+library(grid) # for rasterGrob
 library(boot)
 library(shinycssloaders)
 
