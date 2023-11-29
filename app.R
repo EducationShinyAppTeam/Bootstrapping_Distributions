@@ -279,37 +279,92 @@ ui <- list(
           plotOutput("bootProportionsPlot") %>%
             withSpinner(color = boastUtils::psuPalette[1])
         ),
-          #### Set up a Game Page ----
-          tabItem(
-            tabName = "game",
-            withMathJax(),
-            h2("Practice/Test Yourself with [Type of Game]"),
-            p("On this type of page, you'll set up a game for the user to play.
+        #### Set up a Game Page ----
+        tabItem(
+          tabName = "game",
+          withMathJax(),
+          h2("Practice/Test Yourself with [Type of Game]"),
+          p("On this type of page, you'll set up a game for the user to play.
             Game types include Tic-Tac-Toe, Matching, and a version Hangman to
             name a few. If you have ideas for new game type, please let us know.")
-          ),
-          #### Set up the References Page ----
-          tabItem(
-            tabName = "references",
-            withMathJax(),
-            h2("References"),
-            p("You'll need to fill in this page with all of the appropriate
-            references for your app."),
-            p(
-              class = "hangingindent",
-              "Bailey, E. (2015). shinyBS: Twitter bootstrap components for shiny.
+        ),
+        #### Set up the References Page ----
+        tabItem(
+          tabName = "references",
+          withMathJax(),
+          h2("References"),
+          p( #ShinyBs
+            class = "hangingindent",
+            "Bailey, E. (2015). shinyBS: Twitter bootstrap components for shiny.
             (v0.61). [R package]. Available from
             https://CRAN.R-project.org/package=shinyBS"
-            ),
-            br(),
-            br(),
-            br(),
-            boastUtils::copyrightInfo()
-          )
+          ),
+          p( #boot
+            class = "hangingindent",
+            "Canty A, Ripley BD (2022). boot: Bootstrap R (S-Plus) Functions, 
+            R package. Available from
+            https://CRAN.R-project.org/package=boot"
+            
+          ),
+          p(     #Boast Utilities
+            class = "hangingindent",
+            "Carey, R. (2019), boastUtils: BOAST Utilities, R Package.
+            Available from
+            https://github.com/EducationShinyAppTeam/boastUtils"
+          ),
+          p(     #shinydashboard
+            class = "hangingindent",
+            "Chang, W. and Borges Ribeio, B. (2018), shinydashboard: Create
+            dashboards with 'Shiny', R Package. Available from
+            https://CRAN.R-project.org/package=shinydashboard"
+          ),
+          p(     #shiny
+            class = "hangingindent",
+            "Chang, W., Cheng, J., Allaire, J., Xie, Y., and McPherson, J.
+            (2019), shiny: Web application framework for R, R Package.
+            Available from https://CRAN.R-project.org/package=shiny"
+          ),
+          p(     #shinyWidgets
+            class = "hangingindent",
+            "Perrier, V., Meyer, F., Granjon, D., Fellows, I., and Davis, W.
+            (2020), shinyWidgets: Custom Inputs Widgets for Shiny, R package.
+            Available from
+            https://cran.r-project.org/web/packages/shinyWidgets/index.html"
+          ),
+          p(     #reference for ideas
+            class = "hangingindent",
+            "Rossman/Chance Applet Collection - Reeses Pieces, Available from
+         https://www.rossmanchance.com/applets/2021/oneprop/OneProp.htm?candy=1"
+          ),
+         p( #shinycssloaders
+           class = "hangingindent",
+           "Sali, A., and Attali, D. (2020), shinycssloaders: Add Loading
+            Animations to a 'shiny' Ouput While It's Recalculating. (v. 1.0.0)
+            [R Package] Available from https://CRAN.R-project.org/package=shinycssloaders"
+         ),
+         p( #dplyr
+           class = "hangingindent",
+           "Wickham, H., François, R., Henry, L., Müller, K. (2021). dplyr: A 
+            Grammar of Data Manipulation. R package version 1.0.6. Available from
+            https://CRAN.R-project.org/package=dplyr"
+         ),
+         p( # ggplot2
+           class = "hangingindent",
+           "Wickham, H., Chang, W., Henry, L., Pedersen, T.L., Takahashi, K.,
+            Wilke, C, Woo, K., Yutani, H., and Dunnington, D. (2020),
+            ggplot2: Create Elegant Data Visualisations Using the
+            Grammar of Graphics, R Package. Available from
+            https://cran.r-project.org/web/packages/ggplot2/index.html"
+         ),
+         br(),
+         br(),
+         br(),
+         boastUtils::copyrightInfo()
         )
       )
     )
   )
+)
 
 
 
@@ -444,7 +499,7 @@ server <- function(input, output, session) {
     } else if (input$sam == "medium") {
       100
     } else if (input$sam == "large") {
-     400
+      400
     }
   }
   
@@ -518,7 +573,7 @@ server <- function(input, output, session) {
       output$sampleProp1 <- renderUI(
         expr = {
           paste0("Your sample's proportion of blue-colored candies is ",
-                storeSampleBlue(), ".")
+                 storeSampleBlue(), ".")
         }
       )
       
@@ -545,7 +600,7 @@ server <- function(input, output, session) {
   
   firstInitialized <- reactiveVal(FALSE)
   secondInitialized <- reactiveVal(FALSE)
-
+  
   # lists for samples and proportions
   firstBootSampleList <- list()
   secondBootSampleList <- list()
@@ -557,7 +612,7 @@ server <- function(input, output, session) {
   #flag for highlighted plot in facet
   highlighted <- reactiveVal(NULL)
   
-
+  
   bootPlots1 <- reactiveVal(NULL)
   bootPlotsOg <- reactiveVal(NULL)
   
@@ -621,7 +676,7 @@ server <- function(input, output, session) {
   observeEvent(
     eventExpr = input$drawBoot,
     handlerExpr = {
-    
+      
       highlighted(NULL)
       clickVal$panelvar1 <- NULL
       
@@ -642,7 +697,7 @@ server <- function(input, output, session) {
       numBootSamp <- input$bootSamp
       
       proportionList <- list()
-
+      
       firstBootSampleData(NULL)
       secondBootSampleData(NULL)
       latestBootSampleData(NULL)
@@ -657,18 +712,18 @@ server <- function(input, output, session) {
         # Calculate the proportion of blue points
         proportionBlue <- sum(resampleDataBoot[[1]] == "blue") / sampleSize
         proportionList[[i]] <- proportionBlue
-
+        
         if (i == 1) {
           firstBootSampleList[[i]] <- resampleDataBoot
-       
+          
         } else if (i == 2) {
           secondBootSampleList[[i]] <- resampleDataBoot
-     
+          
         } else {
           latestBootSampleList[[i]] <- resampleDataBoot
           
         }
-      
+        
         # print(latestBootSampleList)
       }
       
@@ -676,10 +731,10 @@ server <- function(input, output, session) {
       
       # Store bootstrapped samples
       if (is.null(firstBootSampleData())) {
-      firstBootSampleData(firstBootSampleList)
-      secondBootSampleData(secondBootSampleList)
+        firstBootSampleData(firstBootSampleList)
+        secondBootSampleData(secondBootSampleList)
       }
-  
+      
       latestBootSampleData(latestBootSampleList)
       
       # reassign
@@ -698,7 +753,7 @@ server <- function(input, output, session) {
         if (length(latestSampleDataList) == 4) {
           randomSampleIndex <- 3
         } else {
-        randomSampleIndex <- sample(3:(length(latestSampleDataList) - 1), 1)
+          randomSampleIndex <- sample(3:(length(latestSampleDataList) - 1), 1)
         }
         randomSampleData <- latestSampleDataList[[randomSampleIndex]]
         
@@ -825,17 +880,17 @@ server <- function(input, output, session) {
           mapping = aes(label = label),
           size = 5, 
           inherit.aes = FALSE
-          ) 
-
+        ) 
+      
       bootPlots1(bootPlots)
       bootPlotsOg(bootPlots)
-     
+      
       output$bootPlots <- renderPlot(
         expr = {
           bootPlots1()
         }
       )
-
+      
       proportionsValues(sapply(proportionList, identity))
       
       output$bootProportionsPlot <- renderPlot(
@@ -850,7 +905,7 @@ server <- function(input, output, session) {
             proportionDf$numberBoot <- ifelse(proportionDf$numberBoot == 1, "1st Bootstrap",
                                               ifelse(proportionDf$numberBoot == 2, "2nd Bootstrap",
                                                      ifelse(proportionDf$numberBoot == randomSampleIndex, nPlotType,
-                                                     ifelse(proportionDf$numberBoot == length(proportions), "Last Bootstrap", proportionDf$numberBoot))))
+                                                            ifelse(proportionDf$numberBoot == length(proportions), "Last Bootstrap", proportionDf$numberBoot))))
             
             # print(proportionDf)
             # print(length(proportionDf$numberBoot))
@@ -861,8 +916,8 @@ server <- function(input, output, session) {
             } else {
               if (!is.null(highlighted()) && highlighted() == clickVal$panelvar1) {
                 # Set cases with proportions that fall within the bounds to yes to highlight the entire bar
-              proportionDf <- proportionDf %>%
-                mutate(selected = ifelse(Proportion >= bounds()[1] & Proportion < bounds()[2], "Yes", "No"))
+                proportionDf <- proportionDf %>%
+                  mutate(selected = ifelse(Proportion >= bounds()[1] & Proportion < bounds()[2], "Yes", "No"))
               } else {
                 proportionDf$selected <- "No"
               }
@@ -885,7 +940,7 @@ server <- function(input, output, session) {
             #Use Scott's rule
             binWidth <- (3.5*sdData)/(sampleSize^(1/3))
             # print(binWidth)
-
+            
             
             # 
             # breaks <- seq(0, 1, by = binWidth)
@@ -909,15 +964,15 @@ server <- function(input, output, session) {
             
             # May work better for now
             breaks <- seq(floor((min(proportionDf$Proportion) - binWidth)/0.05) * 0.05, ceiling((max(proportionDf$Proportion) + binWidth)/0.05) * 0.05, by = binWidth)
-
-
+            
+            
             #create bounds
             if (!is.null(clickVal$panelvar1)) {
               # print(length(breaks))
               for (i in 1:length(breaks) - 1) {
                 lowerBound <-   breaks[i]
                 upperBound <-  breaks[i + 1]
-
+                
                 if (proportionDf$Proportion[which(proportionDf$numberBoot == clickVal$panelvar1)] >= lowerBound && proportionDf$Proportion[which(proportionDf$numberBoot == clickVal$panelvar1)] < upperBound) {
                   # If it satisfies the condition, add to bounds list
                   bounds <- c(lowerBound, upperBound)
@@ -927,7 +982,7 @@ server <- function(input, output, session) {
               }
             }
             
-           adapY <-  -0.02*numBootSamp 
+            adapY <-  -0.03*numBootSamp 
             BootHist <- ggplot(
               data = proportionDf,
               mapping = aes(x = Proportion, fill = selected)
@@ -944,22 +999,22 @@ server <- function(input, output, session) {
                 x = "Proportion of Blue",
                 y = "Frequency"
               ) +
-                # For confidence interval later?
-                # geom_segment(
-                #   x = confInt[1],
-                #   xend = confInt[1],
-                #   y = 0,
-                #   yend = Inf,
-                #   color = "red",
-                #   linetype = "dotted"
-                # ) +
-                # geom_segment(
-                #   x = confInt[2],
-                #   xend = confInt[2],
-                #   y = 0,
-                #   yend = Inf,
-                #   color = "red",
-                #   linetype = "dotted"
+              # For confidence interval later?
+              # geom_segment(
+              #   x = confInt[1],
+              #   xend = confInt[1],
+              #   y = 0,
+              #   yend = Inf,
+              #   color = "red",
+              #   linetype = "dotted"
+              # ) +
+              # geom_segment(
+              #   x = confInt[2],
+            #   xend = confInt[2],
+            #   y = 0,
+            #   yend = Inf,
+            #   color = "red",
+            #   linetype = "dotted"
             # ) +
             scale_fill_manual(
               values = c("No" = boastUtils::boastPalette[8], "Yes" = boastUtils::boastPalette[2]), 
@@ -1006,7 +1061,7 @@ server <- function(input, output, session) {
                     mapping = aes(x = Proportion[which(numberBoot == clickVal$panelvar1)], y = adapY),
                     label = "Selected Bootstrap Lies Here",
                     color = boastUtils::boastPalette[2],
-                    size = 5
+                    size = 6
                   )
                 # print(proportionDf)
               }
