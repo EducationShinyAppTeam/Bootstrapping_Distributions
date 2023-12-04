@@ -7,6 +7,7 @@ library(shinyWidgets)
 library(boastUtils)
 library(ggplot2)
 library(grid) # for rasterGrob
+# library(gridExtra)
 library(boot)
 library(png)
 library(shinycssloaders)
@@ -398,7 +399,7 @@ server <- function(input, output, session) {
   )
   
   ## machine set up ----
-  img <- readPNG("C:/Users/Sean/Github_Files/Bootstrapping_Distributions/www/slot.png")
+  img <- readPNG("www/slot.png")
   CoinSlot <- rasterGrob(img, interpolate = TRUE)
   
   lab1Pop <- reactive(
