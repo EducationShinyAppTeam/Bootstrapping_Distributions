@@ -8,6 +8,7 @@ library(boastUtils)
 library(ggplot2)
 library(grid) # for rasterGrob
 library(boot)
+library(png)
 library(shinycssloaders)
 
 # Load additional dependencies and setup functions
@@ -1138,7 +1139,6 @@ server <- function(input, output, session) {
               fill = "black"
             ) +
             theme_void()
-          
           
           FullCandyMachine <- candyMachineBody +
             annotation_custom(
